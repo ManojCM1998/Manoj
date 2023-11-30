@@ -1,0 +1,264 @@
+/**************************
+  Read basic CO2 and TVOCs
+  Hardware Connections (Breakoutboard to Arduino):
+  3.3V to 3.3V pin
+  GND to GND pin
+  SDA to A4
+  SCL to A5
+
+**************************/
+//#include <SoftwareSerial.h>
+#include <Wire.h>
+#include "SparkFunCCS811.h" //Click here to get the library: http://librarymanager/All#SparkFun_CCS811
+#include "ens210.h" // ENS210 library
+
+static int frame[7];  float dustDensity, PM2=0;
+static int dataStart, VoutH, VoutL, VrefH, VrefL, checksum, dataEnd;
+static int frame2[7];
+String Data_SMS; String Data_SMS_2;
+float temp,hum,tvoc;
+ int M1=0,M2=0,M3=0; 
+#define redPin 13
+#define bluePin 11
+#define greenPin 12
+#define DRV_LMP3 44
+int count=0;
+//SoftwareSerial mySerial(rxPin, txPin);
+
+ENS210 ens210;
+//#define CCS811_ADDR 0x5B //Default I2C Address
+#define CCS811_ADDR 0x5A //Alternate I2C Address
+
+CCS811 mySensor(CCS811_ADDR);
+
+void IAQ_READ (void);
+void pm_read (void);
+
+
+int getSerial() 
+{
+  while (!Serial2.available()) {}
+  return Serial2.read();
+}
+/*int cntrl_getSerial() 
+{
+  while (!Serial1.available()) {}
+  return Serial1.read();
+}*/
+void setup()
+{
+  Serial.begin(115200);
+  Serial3.begin(115200);
+  Serial1.begin(9600);
+  Serial2.begin(2400);
+  Serial3.println("SYSTEM Inialize.... ");
+  
+  Serial.println("wifi setup");
+  // wifi_setup();
+   
+  Wire.begin(); //Inialize I2C Hardware
+  if (mySensor.begin() == false)
+  {
+    Serial3.print("CCS811 error. Please check wiring. Freezing...");
+    while (1);
+  }
+  ens210.begin();
+  pinMode(redPin, OUTPUT);
+  pinMode(bluePin, OUTPUT);
+  pinMode(greenPin, OUTPUT);
+  pinMode(DRV_LMP3, OUTPUT);
+  Serial1.println( "#");
+  for (int i = 1; i <= 13; i++)
+  {
+  RGB_LED(i); delay(500);  
+  }
+  Serial3.println("wait few seconds... : )");
+}
+
+void loop()
+{ 
+  ////////// pm 2.5 data read /////////
+  // Look for end of frame.
+  if ( getSerial() != 0xff )
+    return;
+  // Read in next frame.
+  for(int i = 0; i < 7; i++) 
+  {    frame[i] = getSerial();  }
+
+  
+  // Assign values.
+  dataStart = frame[0];
+  VoutH = frame[1];
+  VoutL = frame[2];
+  VrefH = frame[3];
+  VrefL = frame[4];
+  checksum = frame[5];
+  dataEnd = frame[6];
+  
+  // Check the start and end of frame.
+  if ( dataStart != 0xaa || dataEnd != 0xff )  
+    return;
+  // Verify the checksum.
+  unsigned int testSum = VoutH + VoutL + VrefH + VrefL;
+  if ( checksum != (testSum & 0xff) )
+    return;
+ ////// end //////
+
+  if(count==25)
+  { 
+  IAQ_READ();
+  pm_read();
+  
+  
+  Data_SMS = "[Device 2] TEMP:"+String(temp)+" C, HUM:"+String(hum)+" %RH, TVOC:"+String(mySensor.getTVOC())+" ppb, eCO2 :"+String(mySensor.getCO2())+" ppm, dustDensity :"+String(PM2)+" ug/m3 ";
+  //Data_SMS_2="RELAY1"+String(frame2[1])+"RELAY2"+String(frame2[3])+"RELAY3"+String(frame2[5]);
+  Serial.print(Data_SMS);
+  
+  Serial3.println(Serial1.readString()); 
+  Serial3.println();   
+  count=0; 
+  }
+  
+  if(30 > mySensor.getTVOC() && mySensor.getTVOC() >=0   )
+  {
+    if(79 > dustDensity && 999 >mySensor.getCO2())
+    {
+    RGB_LED(9); 
+    analogWrite(DRV_LMP3, 0 );
+    }
+  }
+    if((379 > mySensor.getTVOC() && mySensor.getTVOC() >31)||(199 > dustDensity && dustDensity > 80))
+  {
+    RGB_LED(12);
+    analogWrite(DRV_LMP3, 128 ); 
+
+  }
+    if( mySensor.getTVOC() >380 || dustDensity > 200 || mySensor.getCO2()>1000 )
+  {
+  
+    RGB_LED(1); 
+    analogWrite(DRV_LMP3, 255 );
+  }
+  count++;
+  delay(100); //Don't spam the I2C bus
+  
+}
+
+
+void RGB_LED (int colour)
+{
+  switch(colour)
+  {
+    case 1 :analogWrite( redPin, 255 ); //red
+            analogWrite( bluePin, 0 );
+            analogWrite( greenPin,0 );
+            break;
+    case 2 :analogWrite( redPin, 255 ); //rose
+            analogWrite( bluePin, 128 );
+            analogWrite( greenPin,0 );
+            break;
+    case 3 :analogWrite( redPin, 255 ); //magenta
+            analogWrite( bluePin,255 );
+            analogWrite( greenPin,0 );
+            break;
+    case 4 :analogWrite( redPin, 128 ); //violet
+            analogWrite( bluePin,255 );
+            analogWrite( greenPin,0 );
+            break;
+    case 5 :analogWrite( redPin,  0 ); //blue
+            analogWrite( bluePin, 255 );
+            analogWrite( greenPin,0 );
+            break;
+    case 6 :analogWrite( redPin,  0 ); //Azure
+            analogWrite( bluePin, 255 );
+            analogWrite( greenPin,128 );
+            break;
+    case 7 :analogWrite( redPin, 0 ); //cyan
+            analogWrite( bluePin, 255 );
+            analogWrite( greenPin,255 );
+            break;
+    case 8 :analogWrite( redPin, 0 ); //spring green
+            analogWrite( bluePin, 128 );
+            analogWrite( greenPin,255 );
+            break;
+    case 9 :analogWrite( redPin, 0 ); //green
+            analogWrite( bluePin, 0 );
+            analogWrite( greenPin,255 );
+            break;
+    case 10:analogWrite( redPin, 128 ); //chartreuse
+            analogWrite( bluePin, 0 );
+            analogWrite( greenPin,255 );
+            break;
+    case 11:analogWrite( redPin, 255 ); //yellow
+            analogWrite( bluePin, 0 );
+            analogWrite( greenPin,255 );
+            break;
+    case 12:analogWrite( redPin, 255 ); //orange
+            analogWrite( bluePin, 0 );
+            analogWrite( greenPin,128 );
+            break;
+    default:analogWrite( redPin, 0 ); // led off
+            analogWrite( bluePin, 0 );
+            analogWrite( greenPin,0 );       
+  }
+}
+
+
+void pm_read (void)
+{
+  float Vout = (VoutH * 256 + VoutL) / 1024.0 * 5.0;
+  float a = 100.0 / 0.35;  
+  float dustDensity = a * Vout;
+  PM2 = dustDensity;
+  return PM2;
+}
+
+void IAQ_READ (void)
+{
+  int t_data, t_status, h_data, h_status;
+
+  delay(10);
+  //Check to see if data is ready with .dataAvailable()
+  if (mySensor.dataAvailable())
+  {
+
+    ens210.measure(&t_data, &t_status, &h_data, &h_status );
+    temp = ens210.toCelsius(t_data,10)/10.0;
+
+    hum = ens210.toPercentageH(h_data,1);
+
+    mySensor.setEnvironmentalData(hum,temp);
+    mySensor.readAlgorithmResults();
+
+    
+  }
+}
+
+ void wifi_setup (void)
+ {
+  
+  Serial3.print("+++"); RGB_LED(1);
+  delay(3000);
+  Serial3.print("AT+FACTORY\r"); RGB_LED(2); delay(3000);
+  Serial3.print("+++"); RGB_LED(3); delay(3000);
+  Serial3.print("AT+WJAP=HUAWEI-vET3,amma@143143,\r"); RGB_LED(4); delay(3000);              // SSID &PSWRD
+  Serial3.println("AT+CIPSTOP=1\r "); RGB_LED(5); delay(3000); 
+  Serial3.print("AT+CIPSTART=1,tcp_client,192.168.18.170,2001\r");  RGB_LED(6);delay(3000);  //TCP: IP
+  Serial3.print("AT+CIPSENDRAW\r"); RGB_LED(7); delay(3000);
+
+ }
+
+ void RELAY_STATUS (int R_status)
+ {
+  switch(R_status)
+  {
+    case 1 :
+            break;
+    case 2 :
+            break;
+    case 3 :
+            break;
+    case 4 :
+            break;
+  }
+ }

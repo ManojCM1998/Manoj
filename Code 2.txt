@@ -1,0 +1,144 @@
+#define redPin 13
+#define bluePin 11
+#define greenPin 12
+
+#define DRV_redPin 5
+#define DRV_bluePin 7
+#define DRV_greenPin 6
+
+#define DRV_LMP1 46
+#define DRV_LMP2 45
+#define DRV_LMP3 44
+
+#define RLY1Pin 62
+#define RLY2Pin 63
+#define RLY3Pin 64
+#define RLY4Pin 65
+#define RLY5Pin 22
+
+#define LED1Pin 8
+#define LED2Pin 9
+
+#define SW1Pin 28
+#define SW2Pin 29
+
+#define CSW1Pin 66
+#define CSW2Pin 67
+#define CSW3Pin 68
+#define CSW4Pin 69
+
+void setup() 
+{ // on bord rgb led
+  pinMode(redPin, OUTPUT);
+  pinMode(bluePin, OUTPUT);
+  pinMode(greenPin, OUTPUT);
+  // rgb led drive
+  pinMode(DRV_redPin, OUTPUT);
+  pinMode(DRV_bluePin, OUTPUT);
+  pinMode(DRV_greenPin, OUTPUT);
+  // read lamp drive
+  pinMode(DRV_LMP1, OUTPUT);
+  pinMode(DRV_LMP2, OUTPUT);
+  pinMode(DRV_LMP3, OUTPUT);
+  //relay pin driver
+  pinMode(RLY1Pin, OUTPUT);
+  pinMode(RLY2Pin, OUTPUT);
+  pinMode(RLY3Pin, OUTPUT);  
+  pinMode(RLY4Pin, OUTPUT);
+  pinMode(RLY5Pin, OUTPUT);
+  // test led
+  pinMode(LED1Pin, OUTPUT);
+  pinMode(LED2Pin, OUTPUT);
+  //test switch
+  pinMode(SW1Pin, INPUT);
+  pinMode(SW2Pin, INPUT);
+  //remote
+  pinMode(CSW1Pin, INPUT);
+  pinMode(CSW2Pin, INPUT);
+  pinMode(CSW3Pin, INPUT);
+  pinMode(CSW4Pin, INPUT);
+
+
+  digitalWrite(LED1Pin, HIGH); 
+  digitalWrite(LED2Pin, HIGH); 
+  delay(5000); 
+  digitalWrite(LED1Pin, LOW); 
+  digitalWrite(LED2Pin, LOW);
+    for (int i = 1; i <= 13; i++)
+  {
+  RGB_LED(i); delay(500);  
+  }
+  digitalWrite(RLY1Pin, HIGH); delay(500);
+  digitalWrite(RLY2Pin, HIGH); delay(500); 
+  digitalWrite(RLY3Pin, HIGH); delay(500);
+  digitalWrite(RLY4Pin, HIGH); delay(500); 
+  digitalWrite(RLY5Pin, HIGH);   
+}
+
+void loop() 
+{
+  if (digitalRead(SW1Pin) == LOW)
+     {digitalWrite(LED1Pin, HIGH);}
+  if (digitalRead(SW2Pin) == LOW)
+     {digitalWrite(LED2Pin, HIGH);}
+  digitalWrite(LED1Pin, LOW); 
+  digitalWrite(LED2Pin, LOW);
+}
+
+void RGB_LED (int colour)
+{
+  switch(colour)
+  {
+    case 1 :analogWrite( redPin, 255 ); //red
+            analogWrite( bluePin, 0 );
+            analogWrite( greenPin,0 );
+            break;
+    case 2 :analogWrite( redPin, 255 ); //rose
+            analogWrite( bluePin, 128 );
+            analogWrite( greenPin,0 );
+            break;
+    case 3 :analogWrite( redPin, 255 ); //magenta
+            analogWrite( bluePin,255 );
+            analogWrite( greenPin,0 );
+            break;
+    case 4 :analogWrite( redPin, 128 ); //violet
+            analogWrite( bluePin,255 );
+            analogWrite( greenPin,0 );
+            break;
+    case 5 :analogWrite( redPin,  0 ); //blue
+            analogWrite( bluePin, 255 );
+            analogWrite( greenPin,0 );
+            break;
+    case 6 :analogWrite( redPin,  0 ); //Azure
+            analogWrite( bluePin, 255 );
+            analogWrite( greenPin,128 );
+            break;
+    case 7 :analogWrite( redPin, 0 ); //cyan
+            analogWrite( bluePin, 255 );
+            analogWrite( greenPin,255 );
+            break;
+    case 8 :analogWrite( redPin, 0 ); //spring green
+            analogWrite( bluePin, 128 );
+            analogWrite( greenPin,255 );
+            break;
+    case 9 :analogWrite( redPin, 0 ); //green
+            analogWrite( bluePin, 0 );
+            analogWrite( greenPin,255 );
+            break;
+    case 10:analogWrite( redPin, 128 ); //chartreuse
+            analogWrite( bluePin, 0 );
+            analogWrite( greenPin,255 );
+            break;
+    case 11:analogWrite( redPin, 255 ); //yellow
+            analogWrite( bluePin, 0 );
+            analogWrite( greenPin,255 );
+            break;
+    case 12:analogWrite( redPin, 255 ); //orange
+            analogWrite( bluePin, 0 );
+            analogWrite( greenPin,128 );
+            break;
+    default:analogWrite( redPin, 0 ); // led off
+            analogWrite( bluePin, 0 );
+            analogWrite( greenPin,0 );       
+  }
+}
